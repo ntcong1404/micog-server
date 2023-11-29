@@ -5,9 +5,11 @@ import userController from "../controllers/user.controller.js";
 import requestHandler from "../handlers/request.handler.js";
 import userModel from "../models/user.model.js";
 import tokenMiddleware from "../middlewares/token.middleware.js";
+import listController from "../controllers/list.controller.js";
 
 const router = express.Router();
 
+// user
 router.post(
   "/signup",
   body("email")
@@ -50,8 +52,13 @@ router.post(
 );
 
 router.put(
-  "/update_password",
+  "/update_profile",
   tokenMiddleware.auth,
+  body("displayName")
+    .exists()
+    .withMessage("Display name is required")
+    .isLength({ min: 3 })
+    .withMessage("Display name minimum 3 characters"),
   body("password")
     .exists()
     .withMessage("Password is required")
@@ -62,22 +69,13 @@ router.put(
     .withMessage("New password is required")
     .isLength({ min: 6 })
     .withMessage("New password minimum 6 characters"),
-  body("confirmNewPassword")
-    .exists()
-    .withMessage("Confirm new password is required")
-    .isLength({ min: 6 })
-    .withMessage("Confirm new password minimum 6 characters")
-    .custom((value, { req }) => {
-      if (value !== req.body.newPassword)
-        throw new Error("Confirm new password not match");
-      return true;
-    }),
   requestHandler.validate,
-  userController.updatePassword
+  userController.updateProfile
 );
 
 router.get("/info", tokenMiddleware.auth, userController.getInfo);
 
+// favorite
 router.get(
   "/favorites",
   tokenMiddleware.auth,
@@ -89,17 +87,16 @@ router.post(
   tokenMiddleware.auth,
   body("type")
     .exists()
-    .withMessage("type is required")
+    .withMessage("Type is required")
     .custom((type) => ["movie", "tv"].includes(type))
-    .withMessage("type invalid"),
+    .withMessage("Type invalid"),
   body("mediaId")
     .exists()
-    .withMessage("mediaId is required")
+    .withMessage("MediaId is required")
     .isLength({ min: 1 })
-    .withMessage("mediaId can not be empty"),
-  body("mediaTitle").exists().withMessage("mediaTitle is required"),
-  body("mediaPoster").exists().withMessage("mediaPoster is required"),
-  body("mediaRate").exists().withMessage("mediaRate is required"),
+    .withMessage("MediaId can not be empty"),
+  body("mediaTitle").exists().withMessage("MediaTitle is required"),
+  body("mediaPoster").exists().withMessage("MediaPoster is required"),
   requestHandler.validate,
   favoriteController.addFavorite
 );
@@ -108,6 +105,56 @@ router.delete(
   "/favorites/:favoriteId",
   tokenMiddleware.auth,
   favoriteController.removeFavorite
+);
+
+//list
+router.get("/lists", tokenMiddleware.auth, listController.getListsOfUser);
+
+router.post(
+  "/lists",
+  tokenMiddleware.auth,
+  body("title").exists().withMessage("Title is required"),
+  body("description").exists().withMessage("Description is required"),
+  requestHandler.validate,
+  listController.addList
+);
+
+router.delete(
+  "/lists/:listId",
+  tokenMiddleware.auth,
+  listController.removeList
+);
+
+// movie in list
+router.get(
+  "/list_movie/:listId",
+  tokenMiddleware.auth,
+  listController.getMovieOfList
+);
+
+router.post(
+  "/list_movie/:listId",
+  tokenMiddleware.auth,
+  body("type")
+    .exists()
+    .withMessage("Type is required")
+    .custom((type) => ["movie", "tv"].includes(type))
+    .withMessage("Type invalid"),
+  body("mediaId")
+    .exists()
+    .withMessage("MediaId is required")
+    .isLength({ min: 1 })
+    .withMessage("MediaId can not be empty"),
+  body("mediaTitle").exists().withMessage("MediaTitle is required"),
+  body("mediaPoster").exists().withMessage("MediaPoster is required"),
+  requestHandler.validate,
+  listController.addMovieIntoList
+);
+
+router.delete(
+  "/list_movie/:movieId/:listId",
+  tokenMiddleware.auth,
+  listController.removeMovieInList
 );
 
 export default router;

@@ -43,7 +43,7 @@ const signin = async (req, res) => {
       return responseHandler.badrequest(res, "Wrong password");
 
     const token = jsonwebtoken.sign({ data: user._id }, "1234", {
-      expiresIn: "24h",
+      expiresIn: "48h",
     });
 
     user.password = undefined;
@@ -59,9 +59,9 @@ const signin = async (req, res) => {
   }
 };
 
-const updatePassword = async (req, res) => {
+const updateProfile = async (req, res) => {
   try {
-    const { password, newPassword } = req.body;
+    const { displayName, password, newPassword } = req.body;
 
     const user = await userModel
       .findById(req.user.id)
@@ -69,10 +69,14 @@ const updatePassword = async (req, res) => {
 
     if (!user) return responseHandler.unauthorize(res);
 
-    if (!user.validPassword(password))
+    const isMatch = crypto
+      .pbkdf2Sync(password, user.salt, 1000, 64, "sha512")
+      .toString("hex");
+    if (user.password !== isMatch)
       return responseHandler.badrequest(res, "Wrong password");
 
     user.setPassword(newPassword);
+    user.displayName = displayName;
 
     await user.save();
 
@@ -98,5 +102,5 @@ export default {
   signup,
   signin,
   getInfo,
-  updatePassword,
+  updateProfile,
 };

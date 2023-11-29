@@ -1,5 +1,8 @@
 import responseHandler from "../handlers/response.handler.js";
 import { tmdbApi } from "../tmdb/tmdb.api.js";
+import tokenMiddlerware from "../middlewares/token.middleware.js";
+import userModel from "../models/user.model.js";
+import favoriteModel from "../models/favorite.model.js";
 
 const getTrending = async (req, res) => {
   try {
@@ -54,13 +57,24 @@ const getDiscover = async (req, res) => {
 const getDetails = async (req, res) => {
   try {
     const { item, id } = req.params;
-
     const response = await tmdbApi.mediaDetails({
       item,
       id,
     });
+    const tokenDecoded = tokenMiddlerware.tokenDecode(req);
 
-    return responseHandler.ok(res, response);
+    if (tokenDecoded) {
+      const user = await userModel.findById(tokenDecoded.data);
+      if (user) {
+        const isFavorite = await favoriteModel.findOne({
+          user: user.id,
+          mediaId: id,
+        });
+        response.isFavorite = isFavorite !== null;
+      }
+    }
+
+    responseHandler.ok(res, response);
   } catch {
     responseHandler.error(res);
   }

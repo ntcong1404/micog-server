@@ -27,10 +27,6 @@ export default mongoose.model(
         type: String,
         required: true,
       },
-      mediaRate: {
-        type: Number,
-        required: true,
-      },
     },
     modelOptions
   ),
