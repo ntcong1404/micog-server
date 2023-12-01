@@ -2,6 +2,22 @@ import userModel from "../models/user.model.js";
 import jsonwebtoken from "jsonwebtoken";
 import responseHandler from "../handlers/response.handler.js";
 import crypto from "crypto";
+import fs from "fs";
+
+// Tạo cặp khóa RSA
+const { privateKey, publicKey } = crypto.generateKeyPairSync("rsa", {
+  modulusLength: 2048,
+});
+// Lưu khóa bí mật vào tệp tin
+fs.writeFileSync(
+  "private.key",
+  privateKey.export({ type: "pkcs1", format: "pem" })
+);
+// Lưu khóa công khai vào tệp tin
+fs.writeFileSync(
+  "public.key",
+  publicKey.export({ type: "pkcs1", format: "pem" })
+);
 
 const signup = async (req, res) => {
   try {
@@ -13,10 +29,19 @@ const signup = async (req, res) => {
     user.email = email;
     user.setPassword(password);
     await user.save();
+    const privateKey = fs.readFileSync("private.key");
 
-    const token = jsonwebtoken.sign({ data: user.id }, "1234", {
-      expiresIn: "24h",
+    const token = jsonwebtoken.sign({ data: user.id }, privateKey, {
+      expiresIn: "15m",
+      algorithm: "RS256",
     });
+
+    // res.cookie("ACCESS_TOKEN", token, {
+    //   httpOnly: true,
+    //   secure: false,
+    //   sameSite: "strict",
+    //   maxAge: 3600000,
+    // });
     responseHandler.created(res, {
       token,
       ...user._doc,
@@ -41,13 +66,22 @@ const signin = async (req, res) => {
       .toString("hex");
     if (user.password !== isMatch)
       return responseHandler.badrequest(res, "Wrong password");
+    const privateKey = fs.readFileSync("private.key");
 
-    const token = jsonwebtoken.sign({ data: user._id }, "1234", {
-      expiresIn: "48h",
+    const token = jsonwebtoken.sign({ data: user._id }, privateKey, {
+      algorithm: "RS256",
+      expiresIn: "15m",
     });
 
     user.password = undefined;
     user.salt = undefined;
+
+    // res.cookie("ACCESS_TOKEN", token, {
+    //   httpOnly: true,
+    //   secure: true,
+    //   sameSite: "strict",
+    //   maxAge: 3600000,
+    // });
 
     responseHandler.created(res, {
       token,

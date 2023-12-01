@@ -1,7 +1,9 @@
 import jsonwebtoken from "jsonwebtoken";
 import responseHandler from "../handlers/response.handler.js";
 import userModel from "../models/user.model.js";
+import fs from "fs";
 
+const publicKeyData = fs.readFileSync("public.key");
 const tokenDecode = (req) => {
   try {
     const bearerHeader = req.headers["authorization"];
@@ -9,7 +11,9 @@ const tokenDecode = (req) => {
     if (bearerHeader) {
       const token = bearerHeader.split(" ")[1];
 
-      return jsonwebtoken.verify(token, "1234");
+      return jsonwebtoken.verify(token, publicKeyData, {
+        algorithms: ["RS256"],
+      });
     }
 
     return false;
