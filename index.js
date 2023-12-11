@@ -21,7 +21,7 @@ const mongodbUrl = process.env.MONGODB_URL;
 const server = http.createServer(app);
 
 mongoose
-  .connect(`mongodb://127.0.0.1:27017`)
+  .connect(`mongodb://${mongodbUrl}`)
   .then(() => {
     console.log("Mongodb connected");
     server.listen(port, () => {
