@@ -32,16 +32,10 @@ const signup = async (req, res) => {
     const privateKey = fs.readFileSync("private.key");
 
     const token = jsonwebtoken.sign({ data: user.id }, privateKey, {
-      expiresIn: "15m",
+      expiresIn: "1h",
       algorithm: "RS256",
     });
 
-    // res.cookie("ACCESS_TOKEN", token, {
-    //   httpOnly: true,
-    //   secure: false,
-    //   sameSite: "strict",
-    //   maxAge: 3600000,
-    // });
     responseHandler.created(res, {
       token,
       ...user._doc,
@@ -70,18 +64,11 @@ const signin = async (req, res) => {
 
     const token = jsonwebtoken.sign({ data: user._id }, privateKey, {
       algorithm: "RS256",
-      expiresIn: "15m",
+      expiresIn: "1h",
     });
 
     user.password = undefined;
     user.salt = undefined;
-
-    // res.cookie("ACCESS_TOKEN", token, {
-    //   httpOnly: true,
-    //   secure: true,
-    //   sameSite: "strict",
-    //   maxAge: 3600000,
-    // });
 
     responseHandler.created(res, {
       token,
@@ -132,9 +119,19 @@ const getInfo = async (req, res) => {
   }
 };
 
+const logout = async (req, res) => {
+  try {
+    console.log("logout");
+    responseHandler.ok(res, "logout");
+  } catch {
+    responseHandler.error(res);
+  }
+};
+
 export default {
   signup,
   signin,
   getInfo,
   updateProfile,
+  logout,
 };

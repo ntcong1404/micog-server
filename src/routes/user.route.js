@@ -74,6 +74,7 @@ router.put(
 );
 
 router.get("/info", tokenMiddleware.auth, userController.getInfo);
+router.post("/logout", tokenMiddleware.auth, userController.logout);
 
 // favorite
 router.get(
